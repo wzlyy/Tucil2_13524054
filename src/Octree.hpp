@@ -3,6 +3,12 @@
 
 #include "OctreeNode.hpp"
 #include <map>
+#include <stdlib.h>
+#include <algorithm>
+#include <thread>
+#include <mutex>
+#include <atomic>
+
 Vertex maxVertex(const std::vector<Vertex>& vertices);
 Vertex minVertex(const std::vector<Vertex>& vertices);
 
@@ -16,6 +22,9 @@ public:
     std::vector<Vertex> voxelizedVertices;
     std::vector<Face> voxelizedFaces;
 
+    std::mutex mtx;
+    std::atomic<int> activeThreads = 0;
+    int maxThreads = std::thread::hardware_concurrency();
 
     Octree(Vertex min, Vertex max, int maxDepth, 
            const std::vector<Vertex>& vertices, 

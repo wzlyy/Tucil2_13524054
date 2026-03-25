@@ -1,7 +1,9 @@
 #include "Octree.hpp"
 #include "OctreeNode.hpp"
-#include <stdlib.h>
-#include <algorithm>
+
+
+#define MAX_CONCURRENT_DEPTH 2
+
 OctreeNode* createOctreeNode(Vertex min, Vertex max, int depth)
 {
     OctreeNode* node = new OctreeNode;
@@ -39,8 +41,8 @@ Vertex minVertex(const std::vector<Vertex>& vertices){
     return minVertex;
 }
 Octree::Octree(Vertex min, Vertex max, int maxDepth,
-               const std::vector<Vertex>& vertices,
-               const std::vector<Face>& faces) 
+            const std::vector<Vertex>& vertices,
+            const std::vector<Face>& faces) 
 {
     root = createOctreeNode(min, max, 0);
     this->maxDepth = maxDepth;
@@ -100,6 +102,7 @@ void Octree::divide(OctreeNode* node){
         (node->min.z + node->max.z) / 2
     };
 
+    std::vector<std::thread> threads;
     for (int i = 0; i < 8; i++) {
         Vertex minChild;
         Vertex maxChild;
@@ -155,15 +158,31 @@ void Octree::divide(OctreeNode* node){
             }
         }
         if(node->children[i]->intersectFaces.empty()) {
+            std::lock_guard<std::mutex> lock(mtx);
             skippedNodeCount[node->children[i]->depth]++;
         }
-        divide(node->children[i]);
-    }
+        if(node->depth <= MAX_CONCURRENT_DEPTH && activeThreads < maxThreads){
+            activeThreads++;
+
+            threads.emplace_back([this, i, node]() {
+                this->divide(node->children[i]);
+                activeThreads--;
+            });
+        }
+        else{
+            divide(node->children[i]);
+        }
+            }
+    for (auto &t : threads) t.join();
 }
 void Octree::combine(const OctreeNode* node) 
 {
+    {
+        std::lock_guard<std::mutex> lock(mtx);
+        nodeCount[node->depth]++;
+    }
     if (node->isLeaf) {
-        if (!node->intersectFaces.empty()) { // 🔥 penting
+        if (!node->intersectFaces.empty()) {
             collectVoxels(node);
         }
     } else {
