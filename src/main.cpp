@@ -9,7 +9,7 @@ using namespace std;
 
 
 bool loadFile(const string& input, vector<Vertex>& vertices, vector<Face>& faces){
-    ifstream file("../test/" + input);
+    ifstream file("test/" + input);
     if (!file.is_open()) {
         cout << "File tidak bisa dibuka\n";
         return false;
@@ -75,7 +75,7 @@ bool loadFile(const string& input, vector<Vertex>& vertices, vector<Face>& faces
 }
 
 void writeFile(const Octree& octree, const string& output){
-    ofstream out("../output/" +output);
+    ofstream out(output);
     if (!out.is_open()) cout << "Gagal menulis file!\n";
     for (Vertex v : octree.voxelizedVertices){
         out << "v " << v.x << " " << v.y << " " << v.z << "\n";
@@ -107,7 +107,7 @@ int main(){
         cout << "init Faces: " << octree.initialFaces.size() << endl;
         auto end = chrono::high_resolution_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-        string output = "voxelized_" + filesystem::path(input).filename().string();
+        string output = "test/voxelized_" + filesystem::path(input).filename().string();
         writeFile(octree, output); 
         cout << "Banyaknya voxel: " << octree.voxelizedVertices.size()/8 << "\n";
         cout << "Banyaknya vertex: " << octree.voxelizedVertices.size() << "\n";

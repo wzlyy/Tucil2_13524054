@@ -9,7 +9,7 @@
       "stopAtEntry": false,
       "externalConsole": true,
       "cwd": "c:/Users/wilda/GitHub/Tucil2_13524054/src",
-      "program": "c:/Users/wilda/GitHub/Tucil2_13524054/src/build/Debug/outDebug",
+      "program": "c:/Users/wilda/GitHub/Tucil2_13524054/src/build/Release/outRelease",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
