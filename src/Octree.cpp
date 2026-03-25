@@ -72,7 +72,7 @@ bool Octree::intersect(OctreeNode* node, Face f) {
     if (inside(v0) || inside(v1) || inside(v2))
         return true;
 
-    // 2. bounding box overlap
+    
     Vertex triMin, triMax;
 
     triMin.x = std::min(v0.x, std::min(v1.x, v2.x));
@@ -172,7 +172,7 @@ void Octree::divide(OctreeNode* node){
         else{
             divide(node->children[i]);
         }
-            }
+    }
     for (auto &t : threads) t.join();
 }
 void Octree::combine(const OctreeNode* node) 
@@ -181,15 +181,13 @@ void Octree::combine(const OctreeNode* node)
         std::lock_guard<std::mutex> lock(mtx);
         nodeCount[node->depth]++;
     }
-    if (node->isLeaf) {
-        if (!node->intersectFaces.empty()) {
-            collectVoxels(node);
-        }
-    } else {
-        for (int i = 0; i < 8; i++) {
+    if (node->isLeaf && !node->intersectFaces.empty()) {
+            collectVoxels(node);   
+            return;
+    }
+    for (int i = 0; i < 8; i++) {
             if (node->children[i])
                 combine(node->children[i]);
-        }
     }
 }
 void Octree::collectVoxels(const OctreeNode* node){

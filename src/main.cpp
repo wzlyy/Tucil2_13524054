@@ -104,7 +104,6 @@ int main(){
         Octree octree(minV, maxV, maxDepth, vertices, faces); 
         auto start = chrono::high_resolution_clock::now();
         octree.build();
-        cout << "init Faces: " << octree.initialFaces.size() << endl;
         auto end = chrono::high_resolution_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
         string output = "test/voxelized_" + filesystem::path(input).filename().string();
