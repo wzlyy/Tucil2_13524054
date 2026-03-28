@@ -56,39 +56,102 @@ void Octree::build(){
     combine(root);
 }
 bool Octree::intersect(OctreeNode* node, Face f) {
-    Vertex v0 = initialVertices[f.a]; 
+    Vertex v0 = initialVertices[f.a];
     Vertex v1 = initialVertices[f.b];
     Vertex v2 = initialVertices[f.c];
 
-    float minX = node->min.x, minY = node->min.y, minZ = node->min.z;
-    float maxX = node->max.x, maxY = node->max.y, maxZ = node->max.z;
 
-    auto inside = [&](Vertex v) {
-        return (v.x >= minX && v.x <= maxX &&
-                v.y >= minY && v.y <= maxY &&
-                v.z >= minZ && v.z <= maxZ);
+    Vertex c{
+        (node->min.x + node->max.x) * 0.5f,
+        (node->min.y + node->max.y) * 0.5f,
+        (node->min.z + node->max.z) * 0.5f
     };
 
-    if (inside(v0) || inside(v1) || inside(v2))
-        return true;
+    Vertex h{
+        (node->max.x - node->min.x) * 0.5f,
+        (node->max.y - node->min.y) * 0.5f,
+        (node->max.z - node->min.z) * 0.5f
+    };
 
-    
-    Vertex triMin, triMax;
 
-    triMin.x = std::min(v0.x, std::min(v1.x, v2.x));
-    triMin.y = std::min(v0.y, std::min(v1.y, v2.y));
-    triMin.z = std::min(v0.z, std::min(v1.z, v2.z));
+    Vertex tv0{v0.x - c.x, v0.y - c.y, v0.z - c.z};
+    Vertex tv1{v1.x - c.x, v1.y - c.y, v1.z - c.z};
+    Vertex tv2{v2.x - c.x, v2.y - c.y, v2.z - c.z};
 
-    triMax.x = std::max(v0.x, std::max(v1.x, v2.x));
-    triMax.y = std::max(v0.y, std::max(v1.y, v2.y));
-    triMax.z = std::max(v0.z, std::max(v1.z, v2.z));
 
-    bool overlap =
-        (node->min.x <= triMax.x && node->max.x >= triMin.x) &&
-        (node->min.y <= triMax.y && node->max.y >= triMin.y) &&
-        (node->min.z <= triMax.z && node->max.z >= triMin.z);
+    Vertex e0{tv1.x - tv0.x, tv1.y - tv0.y, tv1.z - tv0.z};
+    Vertex e1{tv2.x - tv1.x, tv2.y - tv1.y, tv2.z - tv1.z};
+    Vertex e2{tv0.x - tv2.x, tv0.y - tv2.y, tv0.z - tv2.z};
 
-    return overlap;
+    auto axisTest = [&](float a, float b, float fa, float fb, float v0a, float v0b, float v1a, float v1b, float v2a, float v2b,
+                        float ha, float hb) {
+        float p0 = a * v0a - b * v0b;
+        float p1 = a * v1a - b * v1b;
+        float p2 = a * v2a - b * v2b;
+
+        float minP = std::min(p0, std::min(p1, p2));
+        float maxP = std::max(p0, std::max(p1, p2));
+
+        float rad = fa * ha + fb * hb;
+        return !(minP > rad || maxP < -rad);
+    };
+
+    float fex = std::abs(e0.x);
+    float fey = std::abs(e0.y);
+    float fez = std::abs(e0.z);
+
+
+    if (!axisTest(e0.z, e0.y, fez, fey, tv0.y, tv0.z, tv1.y, tv1.z, tv2.y, tv2.z, h.y, h.z)) return false;
+    if (!axisTest(e0.z, e0.x, fez, fex, tv0.x, tv0.z, tv1.x, tv1.z, tv2.x, tv2.z, h.x, h.z)) return false;
+    if (!axisTest(e0.y, e0.x, fey, fex, tv0.x, tv0.y, tv1.x, tv1.y, tv2.x, tv2.y, h.x, h.y)) return false;
+
+    fex = std::abs(e1.x);
+    fey = std::abs(e1.y);
+    fez = std::abs(e1.z);
+
+    if (!axisTest(e1.z, e1.y, fez, fey, tv0.y, tv0.z, tv1.y, tv1.z, tv2.y, tv2.z, h.y, h.z)) return false;
+    if (!axisTest(e1.z, e1.x, fez, fex, tv0.x, tv0.z, tv1.x, tv1.z, tv2.x, tv2.z, h.x, h.z)) return false;
+    if (!axisTest(e1.y, e1.x, fey, fex, tv0.x, tv0.y, tv1.x, tv1.y, tv2.x, tv2.y, h.x, h.y)) return false;
+
+    fex = std::abs(e2.x);
+    fey = std::abs(e2.y);
+    fez = std::abs(e2.z);
+
+    if (!axisTest(e2.z, e2.y, fez, fey, tv0.y, tv0.z, tv1.y, tv1.z, tv2.y, tv2.z, h.y, h.z)) return false;
+    if (!axisTest(e2.z, e2.x, fez, fex, tv0.x, tv0.z, tv1.x, tv1.z, tv2.x, tv2.z, h.x, h.z)) return false;
+    if (!axisTest(e2.y, e2.x, fey, fex, tv0.x, tv0.y, tv1.x, tv1.y, tv2.x, tv2.y, h.x, h.y)) return false;
+
+
+    auto min3 = [](float a, float b, float c) {
+        return std::min(a, std::min(b, c));
+    };
+    auto max3 = [](float a, float b, float c) {
+        return std::max(a, std::max(b, c));
+    };
+
+    if (max3(tv0.x, tv1.x, tv2.x) < -h.x || min3(tv0.x, tv1.x, tv2.x) > h.x) return false;
+    if (max3(tv0.y, tv1.y, tv2.y) < -h.y || min3(tv0.y, tv1.y, tv2.y) > h.y) return false;
+    if (max3(tv0.z, tv1.z, tv2.z) < -h.z || min3(tv0.z, tv1.z, tv2.z) > h.z) return false;
+
+
+    Vertex normal{
+        e0.y * e1.z - e0.z * e1.y,
+        e0.z * e1.x - e0.x * e1.z,
+        e0.x * e1.y - e0.y * e1.x
+    };
+
+    float d = -(normal.x * tv0.x + normal.y * tv0.y + normal.z * tv0.z);
+
+    float r =
+        h.x * std::abs(normal.x) +
+        h.y * std::abs(normal.y) +
+        h.z * std::abs(normal.z);
+
+    float s = normal.x * 0 + normal.y * 0 + normal.z * 0 + d;
+
+    if (std::abs(s) > r) return false;
+
+    return true;
 }
 void Octree::divide(OctreeNode* node){
     if (node->depth >= maxDepth || node->intersectFaces.empty()) {

@@ -24,7 +24,7 @@ bool loadFile(const string& input, vector<Vertex>& vertices, vector<Face>& faces
         stringstream ss(line);
         string type;
         ss >> type;
-
+        if(type == "#" || type.substr(0,1) == "#")continue;
         if (type == "v") {
             float x, y, z;
 
@@ -121,7 +121,7 @@ int main(){
 
         cout << "Kedalaman octree: " << maxDepth << "\n";
         cout << "Lama waktu: " << duration << " ms\n";
-        cout << "Path file disimpan: output/voxelized_" + input << "\n";
+        cout << "Path file disimpan: test/voxelized_" + input << "\n";
     }
     
 
